@@ -1,3 +1,5 @@
 # Ruby Socket Server
 
-Run start.sh to run. Requires ruby
+Run start.sh to run.
+
+Requires ruby.

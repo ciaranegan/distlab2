@@ -1,6 +1,6 @@
 require 'socket'
 
-if ARGV[0] == nil
+	if ARGV.empty?
 		message = "HELO text\n"
 	else
 		message = ARGV[0]
@@ -9,8 +9,7 @@ if ARGV[0] == nil
 # Open a tcp socket to localhost
 socket = TCPSocket.open 'localhost', 8000
 
-
-socket.puts "message"
+socket.puts message
 
 # Read the returned data
 while line = socket.gets

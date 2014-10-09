@@ -20,7 +20,7 @@ class ThreadPoolServer
 						# Get the incoming sockets info and send it back
 						sock_domain, remote_port, remote_hostname, remote_ip = client.peeraddr
 						client.puts "#{message}IP: #{remote_ip}\nPort: #{remote_port}\nStudent ID: 11450212"
-						puts "Connected to IP: #{remote_ip}"
+						puts "Connected to IP: #{remote_ip} on thread #{Thread.current[:id]}"
 					else
 						# This catches the other messages
 						client.puts "Invalid message"
