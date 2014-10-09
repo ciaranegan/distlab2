@@ -8,4 +8,4 @@ then
 port_no=8000
 fi
 
-ruby pool.rb $port_no
+ruby pool_server.rb $port_no
