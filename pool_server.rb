@@ -6,6 +6,7 @@ class ThreadPoolServer
 	def initialize(size, port_no)
 		# Number of threads in the thread pool
 		@port_no = port_no
+		puts "hdello"
 		@size = size
 		# Queue of tasks for the threads to execute
 		@jobs = Queue.new 
@@ -16,17 +17,20 @@ class ThreadPoolServer
 				loop do
 					client, message = @jobs.pop # Get a job from the queue
 					if message == "KILL_SERVICE\n"
+						puts "client kill service"
 						client.puts "Server shutdown"
+						self.shutdown
 					elsif message[0,5] == "HELO "
 						# Get the incoming sockets info and send it back
 						# port, ip = Socket.unpack_sockaddr_in(@server.peeraddr)
 						# sock_domain, remote_port, remote_hostname, remote_ip = @server.peeraddr
 						local_ip = UDPSocket.open {|s| s.connect("64.233.187.99", 1); s.addr.last}
 						client.puts "#{message}IP:#{local_ip}\nPort:#{@port_no}\nStudentID:11450212"
-						puts "Connected to IP: #{remote_ip} on thread #{Thread.current[:id]}"
+						puts "client helo message"
 					else
 						# This catches the other messages
 						client.puts "Invalid message"
+						puts "client invalid message"
 					end
 					client.close
 				end
@@ -48,8 +52,8 @@ class ThreadPoolServer
 		@size.times do |i|
 			Thread.kill(@pool[i])
 		end
+		puts "Server shutdown..."
 		@server.close
-		puts "Server shutdown"
 	end
 
 	def run
@@ -62,8 +66,10 @@ class ThreadPoolServer
 			# Updates the loop condition based on the message
 			@server_running = (message != "KILL_SERVICE\n")
 		end
+		puts "outside loop"
 		# Shutsdown once a kill_service message is received
-		self.shutdown
+		# self.shutdown
+		# @server.close
 	end
 end
 
