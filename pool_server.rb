@@ -23,7 +23,7 @@ class ThreadPoolServer
 				loop do
 					client, message = @jobs.pop # Get a job from the queue
 					self.handle_client(client, message)
-					client.close
+					#client.close
 				end
 			end
 		end
@@ -40,6 +40,7 @@ class ThreadPoolServer
 
 	def handle_client(client, message)
 		puts message.chomp
+		keep_connection_open = true
 		case message.chomp
 		when "KILL_SERVICE\n"
 			client.puts "Server shutdown"
@@ -48,42 +49,91 @@ class ThreadPoolServer
 			# Get the incoming sockets info and send it back
 			local_ip = UDPSocket.open {|s| s.connect("64.233.187.99", 1); s.addr.last}
 			client.puts "#{message}IP:#{local_ip}\nPort:#{@port_no}\nStudentID:11450212"
+			client.close
 
 		when /\AJOIN_CHATROOM:(\S+)\\nCLIENT_IP:0\\nPORT:0\\nCLIENT_NAME:(\S+)/
-#           room,join_id = add_to_room($1,$2,client)
-#           client.puts "JOINED_CHATROOM: #{room.name}\nSERVER_IP: XXX\nPORT: XXX\nROOM_REF: #{room.ref}\nJOIN_ID: #{join_id}\n"
-			puts "Inside case"
 			room_name = $1
 			client_name = $2
-
 			if !@chatrooms.has_key?(room_name)
-
 				new_chat = Chatroom.new(room_name, @chatrooms.length)
-
 				@chatrooms[room_name] = new_chat
-
-				# add chatroom to hash and go on as normal
 			end
-			puts "Join chatroom '#{message[14..message.index('\n')-1]}'"
+
 			if !@client_list.has_key?(client_name)
 				@client_list[client_name] = Client.new(client_name, client_name+room_name, client)
 			end
-				@chatrooms[room_name].add_client(@client_list[client_name])
+			@client_list[client_name].socket = client
+			@chatrooms[room_name].add_client(@client_list[client_name])
+			#client.close
+
+		when /\ALEAVE_CHATROOM:(\S+)\\nJOIN_ID:(\S+)\\nCLIENT_NAME:(\S+)/
+			chatroom_name = $1
+			join_id = $2
+			client_name = $3
+			if authenticate_user(client_name, join_id)
+				@client_list[client_name].socket = client
+				if @chatrooms.has_key?(chatroom_name)
+					@chatrooms[chatroom_name].remove_client(@client_list[client_name])
+
+				else
+					client.puts "ERROR_CODE:3\nERROR_DESCRIPTION:Invalid chatroom"
+				end
+			else
+				client.puts "ERROR_CODE:2\nERROR_DESCRIPTION:Cannot authenticate user"
+			end
+
+			# client.close
+
+		when /\ADISCONNECT:0\\nPORT:0\\nCLIENT_NAME:(\S+)/
+			self.disconnect($1)
+			keep_connection_open = false
+			client.puts "Disconnecting"
+			client.close
+
+		when /\ACHAT:(\S+)\\nJOIN_ID:(\S+)\\nCLIENT_NAME:(\S+)\\nMESSAGE:(.*)/
+			chat_id = $1
+			join_id = $2
+			client_name = $3
+			message = $4
+
+			if authenticate_user(client_name, join_id)
+				@client_list[client_name].socket = client
+				@chatrooms.each do |key, chatroom|
+					if chatroom.room_ref == chat_id.to_i
+						chatroom.chat(message, @client_list[client_name])
+					end
+				end
+			else
+				client.puts "ERROR_CODE:2\nERROR_DESCRIPTION:Cannot authenticate user"
+			end
 
 
-		when /^LEAVE_CHATROOM.*/
-			puts "leave chatroom"
-
-		when /^DISCONNECT.*/
-			puts "disconnect"
-
-		when /CHAT.*/
-			puts "chat"
 		else
 			# This catches the other messages
-			client.puts "Invalid message"
+			client.puts "ERROR_CODE:1\nERROR_DESCRIPTION:Invalid command"
 		end
+		if keep_connection_open
+			message = client.gets
+		self.handle_client(client, message)
+		end
+		
+	end
 
+	def authenticate_user(client_name, join_id)
+		if @client_list.has_key?(client_name)
+			return @client_list[client_name].join_id == join_id
+		else
+			return false
+		end
+	end
+
+	def disconnect(client_name)
+		@client_list.delete(client_name)
+		@chatrooms.each do |key, clients|
+			if clients.clients.has_key?(client_name)
+				clients.clients.delete(client_name)
+			end
+		end
 	end
 
 	def shutdown
@@ -102,6 +152,7 @@ class ThreadPoolServer
 		while @server_running == true do
 			client = @server.accept
 			message = client.gets
+			puts message
 			schedule(client, message)
 			# Updates the loop condition based on the message
 			@server_running = (message != "KILL_SERVICE\n")
@@ -117,5 +168,5 @@ if $0 == __FILE__
 	else
 		port_no = ARGV[0]
 	end
-	server = ThreadPoolServer.new(20, port_no)
+	server = ThreadPoolServer.new(150, port_no)
 end

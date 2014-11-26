@@ -1,27 +1,27 @@
 Incoming message list:
-	- JOIN_CHATROOM
+	+ JOIN_CHATROOM
 	  CLIENT_IP
 	  PORT
 	  CLIENT_NAME
 
-	- LEAVE_CHATROOM
+	+ LEAVE_CHATROOM
 	  JOIN_ID
 	  CLIENT_NAME
 
-	- DISCONNECT
+	+ DISCONNECT
 	  PORT
 	  CLIENT_NAME
 
-	- CHAT
+	+ CHAT
 	  JOIN_ID
 	  CLIENT_NAME
 	  MESSAGE
 
 Outgoing message list:
-	- LEFT_CHATROOM
+	+ LEFT_CHATROOM
 	  JOIN_ID
 
-	- JOINED_CHATROOM
+	+ JOINED_CHATROOM
 	  SERVER_IP
 	  PORT
 	  ROOM_REF
@@ -30,12 +30,3 @@ Outgoing message list:
 	- CHAT
 	  CLIENT_NAME
 	  MESSAGE
-
-
-
-
-
-
-
-
---> REGEX NOT BEING RECOGNISED
